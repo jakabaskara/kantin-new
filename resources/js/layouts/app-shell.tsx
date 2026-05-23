@@ -40,7 +40,7 @@ export default function AppShell({
     return (
         <div
             className={cn(
-                'min-h-dvh w-full overflow-x-hidden bg-slate-50 text-slate-900',
+                'min-h-dvh w-full bg-slate-50 text-slate-900',
                 isCashier &&
                     'bg-linear-to-br from-slate-50 via-blue-50 to-slate-100',
             )}

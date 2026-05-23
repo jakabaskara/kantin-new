@@ -12,6 +12,7 @@ use App\Http\Controllers\Cashier\OrderController as CashierOrderController;
 use App\Http\Controllers\Cashier\OrderStatusController;
 use App\Http\Controllers\Customer\MenuController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
+use App\Http\Controllers\DocsController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,8 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
 Route::inertia('/unauthorized', 'auth/unauthorized')->name('unauthorized');
+
+Route::get('/docs/overview', [DocsController::class, 'show'])->name('docs.overview');
 
 Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function (): void {
     Route::get('/', DashboardController::class)->name('admin.dashboard');
