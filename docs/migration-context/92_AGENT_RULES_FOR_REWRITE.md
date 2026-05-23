@@ -59,6 +59,7 @@ Before changing application code, always read:
 - Do not trust `unit_price`, `user_id`, `outlet_id`, or `transaction_id` from the browser as authorization truth.
 - Use DB transactions for order creation, stock changes, and payment/order status transitions.
 - Preserve response field names for compatibility only where old frontend behavior still depends on them.
+- Do not require a customer name for cashier walk-in orders. Use an internal fallback such as `Pelanggan walk-in`. Customer self-order may display the authenticated user's profile or username.
 
 ## Status Rules
 
@@ -70,6 +71,9 @@ Before changing application code, always read:
 
 ## Payment Rules
 
+- Manual cashier cash payment is a separate COD flow and must not call or modify Midtrans behavior.
+- For cash payment, calculate total and change on the server, persist `cash_received_amount` and `change_amount`, and keep receipts scoped to the authenticated cashier outlet.
+- Customer self-order currently uses a temporary Midtrans bypass: create a local paid transaction with `payment_method = BYPASS`, `payment_status = paid`, and `order_status = 1`. Keep this isolated and clearly documented until the payment gateway migration resumes.
 - Preserve Midtrans Snap redirect behavior and current response fields while migrating checkout.
 - Store payment attempts for Snap order ids, tokens, redirect URLs, and statuses.
 - Implement a signed `POST /webhooks/midtrans` route for authoritative payment updates.

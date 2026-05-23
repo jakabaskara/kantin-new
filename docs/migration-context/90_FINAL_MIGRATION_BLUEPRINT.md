@@ -227,6 +227,26 @@ Target models:
 - `PaymentAttempt`: transaction, Midtrans order id, Snap token, redirect URL, attempt status.
 - `PaymentNotification`: raw notification metadata/hash/status for idempotent webhook processing.
 
+Manual cashier cash payment update:
+
+- Manual cashier orders are now a confirmed target flow, not a placeholder.
+- Cashier cash payment must be session-scoped to the authenticated cashier's assigned outlet.
+- The browser may send menu ids, quantities, and cash received amount, but Laravel must calculate menu unit prices, total amount, and change amount server-side.
+- Walk-in cashier orders must not require a customer name; use an internal fallback such as `Pelanggan walk-in`. Self-order customer orders may use the authenticated user's profile/username as the display name.
+- Cash transactions use `payment_method = COD`, `payment_status = paid`, and the documented .NET order workflow `order_status = 1` for newly received orders.
+- Persist `cash_received_amount` and `change_amount` on the transaction so receipts can be reprinted.
+- The cash payment page should show a printable receipt after successful submission and allow reopening recent receipts from the same cashier outlet.
+- This manual cash flow must not touch Midtrans Snap, payment attempts, callbacks, or webhook behavior.
+
+Customer self-order update:
+
+- Customer self-order is now a confirmed target flow.
+- Until payment gateway migration resumes, customer checkout should bypass Midtrans and create a local paid transaction with `payment_method = BYPASS`, `payment_status = paid`, and `order_status = 1`.
+- Customer order creation must still calculate prices server-side, enforce one outlet per order, decrement stock transactionally, and scope order history/tracking to the authenticated customer.
+- Cashier incoming orders should show customer self-orders and cashier/manual orders for the cashier's assigned outlet.
+- Cashier order status updates use the documented .NET workflow values: `1=received`, `2=preparing`, `3=ready`, `4=completed`, `5=cancelled`.
+- Customer and cashier order pages may use Inertia polling for near-real-time updates.
+
 Important strategy:
 
 - If migrating existing data, first decide whether the new app reads legacy PascalCase SQL Server tables or migrates into Laravel snake_case tables.

@@ -1,4 +1,6 @@
-export type User = {
+import type { MigratedUser } from './migration';
+
+export type StarterUser = {
     id: number;
     name: string;
     email: string;
@@ -9,6 +11,8 @@ export type User = {
     [key: string]: unknown; // This allows for additional properties...
 };
 
+export type User = StarterUser | MigratedUser;
+
 export type Auth = {
-    user: User;
+    user: User | null;
 };

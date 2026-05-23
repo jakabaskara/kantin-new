@@ -196,4 +196,73 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 
 - IMPORTANT: Activate `inertia-react-development` when working with Inertia React client-side patterns.
 
+=== migration-rewrite/core rules ===
+
+# Laravel + Inertia + React Rewrite Rules
+
+These rules apply to the ongoing migration from the existing multi-project application into this Laravel + Inertia + React codebase.
+
+## Required Migration Context
+
+- Before implementing any rewrite task, read the relevant files under `docs/migration-context/`.
+- Always read these core files first:
+  - `docs/migration-context/90_FINAL_MIGRATION_BLUEPRINT.md`
+  - `docs/migration-context/91_MODULE_MIGRATION_ORDER.md`
+  - `docs/migration-context/92_AGENT_RULES_FOR_REWRITE.md`
+  - `docs/migration-context/93_UI_PRESERVATION_GUIDE.md`
+  - `docs/migration-context/94_API_TO_INERTIA_CONVERSION_MAP.md`
+- For module work, also read the source context files for that module, such as frontend routes/API usage, .NET backend contracts, existing Laravel API/payment flow, auth, data model, and UI component inventory.
+
+## Migration Architecture
+
+- Target architecture is Laravel 13 + Inertia Laravel v3 + React 19 + Tailwind CSS v4.
+- Use Laravel session auth for browser/Inertia pages.
+- Use Inertia pages for app screens; do not rebuild the target as a separate React Router SPA.
+- Prefer server-provided Inertia props over unnecessary client API calls.
+- Keep JSON/API routes only for payment webhooks, polling/live updates, payment refresh/Snap redirect behavior, external integrations, and temporary compatibility endpoints.
+- Replace frontend JWT/localStorage auth with Laravel middleware, policies, and shared Inertia `auth.user` props.
+- Use Wayfinder or named Laravel routes for frontend navigation and form submissions.
+
+## Behavior And Business Rules
+
+- Preserve existing documented behavior unless the migration context marks it unsafe, mock-only, placeholder, or TODO.
+- Do not invent missing business rules.
+- If behavior is unclear, mark it as TODO and cite the relevant migration context conflict.
+- Known role names include `Admin`, `Cashier`, `Kasir`, `Customer`, and `Mahasiswa`; do not silently choose a canonical mapping without documenting the assumption.
+- Do not merge the .NET order status values and existing Laravel backup API payment/order status values directly. Use an explicit compatibility mapping or separate `payment_status` and `order_status`.
+
+## Laravel Implementation Rules
+
+- Use Laravel conventions: named routes, route model binding, controllers, Form Requests, policies/gates, Eloquent relationships, casts, resources where useful, migrations, and tests.
+- Use Form Requests for validation.
+- Use Eloquent relationships and policies instead of trusting browser-supplied `user_id`, `outlet_id`, `transaction_id`, or `unit_price`.
+- Calculate prices and totals server-side from menu data.
+- Use database transactions for order creation, stock changes, payment state changes, and order status transitions.
+- Add tests for critical migrated behavior, especially auth/roles, policies, validation, order totals, stock transitions, payment attempts, Midtrans webhook idempotency, cashier outlet scoping, and customer order ownership.
+
+## UI Preservation
+
+- Preserve the existing React frontend design during migration.
+- Preserve CSS variables, color palette, typography intent, spacing, layouts, card/table/form/dialog patterns, loading states, empty states, and toast behavior from `docs/migration-context/93_UI_PRESERVATION_GUIDE.md`.
+- Reuse/refactor the shadcn-style primitives from the old `src/components/ui/*` where possible.
+- Preserve role layouts: `AuthLayout`, `AdminLayout`, `CustomerLayout`, and `CashierLayout`, adapted to Inertia `children`, `Link`, and shared `auth.user` props.
+- Do not introduce a redesign, new brand palette, landing page, or marketing-style layout during migration.
+- Tailwind CSS v4 uses `@import "tailwindcss"` and CSS-first `@theme`; do not introduce deprecated Tailwind v3 utilities.
+
+## Payment Gateway Safety
+
+- Preserve the active Midtrans Snap flow and compatibility response fields while migrating checkout.
+- Do not expose secrets, raw provider credentials, raw bearer tokens, or raw exception file/line details.
+- Do not preserve committed fallback Midtrans credentials.
+- Public payment callbacks must not be authoritative unless they validate provider signatures and payment details.
+- Add/keep a signed `POST /webhooks/midtrans` route for authoritative payment updates.
+- Keep browser finish/redirect routes non-authoritative.
+- Validate Midtrans signature, `gross_amount`, `order_id`, and transaction status.
+- Store payment attempt metadata for Snap order ids, tokens, redirect URLs, statuses, and retries.
+- Make webhook handling idempotent.
+
+## Reporting
+
+- After every implementation task, summarize files changed, behavior implemented, tests run, assumptions/TODOs, and any intentionally preserved compatibility behavior.
+
 </laravel-boost-guidelines>

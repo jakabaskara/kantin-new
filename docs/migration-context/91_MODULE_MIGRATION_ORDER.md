@@ -95,14 +95,14 @@ This file gives a prioritized migration order for the Laravel + Inertia + React 
 | Existing frontend files | `src/pages/customer/MenuList.tsx`, `src/pages/customer/CheckoutPage.tsx`, `src/components/layouts/CustomerLayout.tsx` |
 | Existing .NET files | `Controllers/MenuController.cs`, `Controllers/OutletsController.cs` for menu/outlet data |
 | Existing Laravel API files if related | `ApiController@createTransaction` receives checkout payload |
-| Target Laravel routes | `GET /app`, `GET /app/checkout`, `POST /orders` |
-| Target controller | `Customer\MenuController`, `Customer\CheckoutController` or `Customer\OrderController@store` |
+| Target Laravel routes | Implemented interim flow: `GET /app`, `GET /app/orders`, `POST /app/orders`; future payment flow may add `GET /app/checkout` and payment endpoints |
+| Target controller | `Customer\MenuController`, `Customer\OrderController` |
 | Target models | `MenuItem`, `Outlet`, `Transaction`, `TransactionItem`, `PaymentAttempt` |
-| Target Inertia pages | `Pages/Customer/Menu/Index.tsx`, `Pages/Customer/Checkout.tsx` |
-| API behavior | Menu/outlets convert to Inertia props. Checkout submit may be `POST /orders` returning JSON/redirect payload because it must redirect to Midtrans Snap. |
+| Target Inertia pages | `Pages/Customer/Menu/Index.tsx`, `Pages/Customer/Orders/Index.tsx`; future `Pages/Customer/Checkout.tsx` only when payment gateway migration resumes |
+| API behavior | Menu/outlets convert to Inertia props. Current interim checkout is an Inertia form to `POST /app/orders` that bypasses Midtrans, creates a local paid transaction, decrements stock, and redirects to customer order tracking. Future Midtrans checkout must preserve Snap compatibility fields without replacing this documented interim behavior silently. |
 | Complexity level | High |
-| Migration risks | Current cart exists only in `MenuList` state and React Router navigation state; reload loses cart. `/app/cart` link exists but no route. Payment creation response fields must remain compatible. |
-| Suggested first task prompt | "Migrate customer menu and checkout UI to Inertia, define a cart persistence strategy, and wire checkout to a Laravel order endpoint that returns the existing `snap_redirect_url` contract." |
+| Migration risks | Current cart is page-local state and reload loses cart. Customer orders must enforce one outlet per order, calculate prices server-side, and decrement stock transactionally. Payment gateway is intentionally bypassed for now; do not mix this bypass with Midtrans webhook behavior. |
+| Suggested first task prompt | "Harden customer self-order UX: keep the Inertia cart mobile-friendly, submit to `Customer\OrderController@store`, bypass Midtrans only while payment migration is paused, and show order tracking with polling." |
 
 ## Priority 6 - Payment Gateway And Order Creation
 
@@ -133,10 +133,10 @@ This file gives a prioritized migration order for the Laravel + Inertia + React 
 | Target controller | `Customer\OrderController`, `Customer\PaymentController` |
 | Target models | `Transaction`, `TransactionItem`, `PaymentAttempt`, `MenuItem`, `Outlet` |
 | Target Inertia pages | `Pages/Customer/Orders/Index.tsx`, `Pages/Customer/Orders/Show.tsx` |
-| API behavior | Initial order list/show as Inertia props. Keep polling JSON or Inertia partial reload if 10-second refresh remains. Payment retry remains JSON/action. |
+| API behavior | Initial order list/show as Inertia props. Current customer orders use Inertia polling/partial reload and session-scoped reads. Payment retry remains TODO until Midtrans resumes. |
 | Complexity level | High |
 | Migration risks | Existing `/transactions/user` accepts arbitrary `user_id`; target must scope to session user. Existing `/transactions/status` accepts arbitrary `transaction_id`; target must enforce policy. `payment_status` field must remain available until UI is refactored. |
-| Suggested first task prompt | "Migrate customer order history and tracking to Inertia props plus a scoped polling endpoint, preserving the current timeline/status UI and payment retry contract." |
+| Suggested first task prompt | "Improve customer order history/tracking with pagination or detail view, preserving session scoping and the current status timeline; keep payment retry marked TODO until Midtrans resumes." |
 
 ## Priority 8 - Cashier Orders And Transactions
 
@@ -150,10 +150,10 @@ This file gives a prioritized migration order for the Laravel + Inertia + React 
 | Target controller | `Cashier\OrderController`, `Cashier\TransactionController`, `Cashier\OrderStatusController` |
 | Target models | `Transaction`, `TransactionItem`, `Outlet`, `User` |
 | Target Inertia pages | `Pages/Cashier/Orders/Incoming.tsx`, `Pages/Cashier/Transactions/Index.tsx` |
-| API behavior | Initial pages as Inertia props. Keep polling/status JSON while live updates remain polling-based; webhook remains separate. |
+| API behavior | Initial pages as Inertia props. Current incoming orders use Inertia polling/partial reload and `PATCH /cashier/orders/{transaction}/status`; webhook remains separate. |
 | Complexity level | High |
 | Migration risks | Current outlet query accepts arbitrary `outlet_id`; status update only validates outlet if the client sends it; `is_all_transaction=false` means only `Status=1`; exact meaning of `Status=2` is TODO. |
-| Suggested first task prompt | "Migrate cashier incoming orders and transaction history using session-scoped outlet access, preserving polling behavior and status update UI while replacing arbitrary outlet_id access with policies." |
+| Suggested first task prompt | "Add cashier transaction history with pagination and filters, building on the implemented incoming order polling/status update flow and preserving outlet-scoped policies." |
 
 ## Priority 9 - Admin Transactions, Dashboard, And Reports
 
@@ -184,10 +184,10 @@ This file gives a prioritized migration order for the Laravel + Inertia + React 
 | Target controller | `Cashier\CashPaymentController` |
 | Target models | `Transaction`, `TransactionItem`, `MenuItem`, `Stock`, `Outlet` |
 | Target Inertia pages | `Pages/Cashier/CashPayment.tsx` |
-| API behavior | Unknown. Should become Inertia form submission only after business rules are confirmed. |
-| Complexity level | Medium, but blocked by requirements |
-| Migration risks | Current page uses hardcoded mock menu items and logs submit payload only. Do not invent accounting, stock, receipt, or order status rules. |
-| Suggested first task prompt | "Confirm and implement the real backend contract for cashier cash payment; until confirmed, port only the visual shell and mark submission as unsupported." |
+| API behavior | Confirmed Inertia form submission. Server calculates prices, total, and change; stock decrements inside a DB transaction; receipt is returned as a page prop for printing. |
+| Complexity level | Medium |
+| Migration risks | Cashier outlet scoping is mandatory; never trust client `unit_price`, `outlet_id`, or totals; prevent insufficient stock; do not mix this manual COD flow with Midtrans Snap/payment attempt behavior. |
+| Suggested first task prompt | "Finish cashier manual cash payment: accept cash received amount, calculate server-side total/change, decrement outlet-scoped stock transactionally, show printable receipt, and add tests without touching Midtrans." |
 
 ## Priority 11 - Settings And Cleanup
 

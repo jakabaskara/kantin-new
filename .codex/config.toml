@@ -2,3 +2,6 @@
 command = "wsl.exe"
 args = ["/usr/bin/php8.3", "/home/jakabaskara/project/kuliah/kantin-new/artisan", "boost:mcp"]
 cwd = "/home/jakabaskara/project/kuliah/kantin-new"
+
+[mcp_servers.laravel-boost.tools.search-docs]
+approval_mode = "approve"
