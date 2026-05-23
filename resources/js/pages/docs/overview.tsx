@@ -52,6 +52,100 @@ function buildTree(sections: Section[]): TocNode[] {
     return roots;
 }
 
+function CopyButton({ text }: { text: string }) {
+    const [copied, setCopied] = useState(false);
+
+    function copy() {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    }
+
+    return (
+        <button
+            aria-label="Salin kode"
+            className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors ${
+                copied
+                    ? 'bg-emerald-500/20 text-emerald-300'
+                    : 'bg-white/10 text-slate-400 hover:bg-white/20 hover:text-white'
+            }`}
+            onClick={copy}
+            type="button"
+        >
+            {copied ? (
+                <>
+                    <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                    >
+                        <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    Tersalin
+                </>
+            ) : (
+                <>
+                    <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                    >
+                        <rect height="13" rx="2" ry="2" width="13" x="9" y="9" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    Salin
+                </>
+            )}
+        </button>
+    );
+}
+
+const LANG_LABELS: Record<string, string> = {
+    bash: 'bash',
+    shell: 'shell',
+    php: 'PHP',
+    tsx: 'TSX',
+    ts: 'TypeScript',
+    js: 'JavaScript',
+    css: 'CSS',
+    env: '.env',
+    sql: 'SQL',
+    text: 'text',
+};
+
+function CodeBlock({
+    className,
+    children,
+}: {
+    className?: string;
+    children?: React.ReactNode;
+}) {
+    const lang = className?.replace('language-', '') ?? '';
+    const label = LANG_LABELS[lang] ?? lang;
+    const rawText = String(children).replace(/\n$/, '');
+
+    return (
+        <div className="code-block-wrapper">
+            <div className="code-block-header">
+                {label && (
+                    <span className="code-block-lang">{label}</span>
+                )}
+                <CopyButton text={rawText} />
+            </div>
+            <code className={className}>{children}</code>
+        </div>
+    );
+}
+
 function TocItem({
     node,
     activeId,
@@ -102,10 +196,14 @@ function TocItem({
                     >
                         <svg
                             className={`h-3 w-3 transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
-                            fill="currentColor"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="1.5"
                             viewBox="0 0 6 10"
                         >
-                            <path d="M1 1l4 4-4 4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" fill="none" />
+                            <path d="M1 1l4 4-4 4" />
                         </svg>
                     </button>
                 )}
@@ -123,7 +221,7 @@ function TocItem({
             </div>
 
             {hasChildren && open && (
-                <ul className="mt-0.5 space-y-0.5 border-l border-slate-200 ml-2.5">
+                <ul className="ml-2.5 mt-0.5 space-y-0.5 border-l border-slate-200">
                     {node.children.map((child) => (
                         <TocItem
                             activeId={activeId}
@@ -217,20 +315,20 @@ export default function DocsOverview({ markdown }: DocsOverviewProps) {
                 <div className="flex items-start gap-8 xl:gap-12">
 
                     <aside className="sticky top-16 hidden max-h-[calc(100dvh-4.5rem)] w-64 shrink-0 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:block">
-                            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                Daftar Isi
-                            </p>
-                            <nav>
-                                <ul className="space-y-0.5">
-                                    {tocTree.map((node) => (
-                                        <TocItem
-                                            activeId={activeId}
-                                            key={node.section.id}
-                                            node={node}
-                                        />
-                                    ))}
-                                </ul>
-                            </nav>
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            Daftar Isi
+                        </p>
+                        <nav>
+                            <ul className="space-y-0.5">
+                                {tocTree.map((node) => (
+                                    <TocItem
+                                        activeId={activeId}
+                                        key={node.section.id}
+                                        node={node}
+                                    />
+                                ))}
+                            </ul>
+                        </nav>
                     </aside>
 
                     <main
@@ -254,18 +352,19 @@ export default function DocsOverview({ markdown }: DocsOverviewProps) {
                                         {children}
                                     </h3>
                                 ),
+                                pre: ({ children }) => <pre>{children}</pre>,
                                 code: ({ className, children, ...props }) => {
                                     const isBlock =
                                         className?.startsWith('language-');
 
                                     if (isBlock) {
                                         return (
-                                            <code
+                                            <CodeBlock
                                                 className={className}
                                                 {...props}
                                             >
                                                 {children}
-                                            </code>
+                                            </CodeBlock>
                                         );
                                     }
 
@@ -296,8 +395,11 @@ export default function DocsOverview({ markdown }: DocsOverviewProps) {
                 .docs-content ol { margin-bottom: 0.875rem; padding-left: 1.5rem; list-style-type: decimal; }
                 .docs-content li { margin-bottom: 0.25rem; color: #475569; line-height: 1.6; }
                 .docs-content .inline-code { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 0.25rem; padding: 0.125rem 0.375rem; color: #0f172a; }
-                .docs-content pre { background: #0f172a; border-radius: 0.5rem; padding: 1rem 1.25rem; overflow-x: auto; margin-bottom: 1rem; }
-                .docs-content pre code { font-family: 'JetBrains Mono', monospace; background: none; border: none; padding: 0; color: #e2e8f0; font-size: 0.8rem; line-height: 1.6; }
+                .docs-content pre { background: #0f172a; border-radius: 0.5rem; overflow: hidden; margin-bottom: 1rem; }
+                .docs-content pre .code-block-wrapper { display: flex; flex-direction: column; }
+                .docs-content pre .code-block-header { display: flex; align-items: center; justify-content: space-between; padding: 0.375rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); min-height: 2.25rem; }
+                .docs-content pre .code-block-lang { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; }
+                .docs-content pre code { display: block; padding: 1rem 1.25rem; color: #e2e8f0; font-size: 0.8rem; line-height: 1.7; font-family: 'JetBrains Mono', monospace; background: none; border: none; overflow-x: auto; }
                 .docs-content table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.875rem; }
                 .docs-content th { background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #334155; }
                 .docs-content td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; color: #475569; vertical-align: top; }

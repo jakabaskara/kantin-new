@@ -8,16 +8,20 @@
 ## Daftar Isi
 
 1. [Gambaran Umum](#1-gambaran-umum)
-2. [Arsitektur MVC di Laravel](#2-arsitektur-mvc-di-laravel)
-3. [Skema Database & Migrasi](#3-skema-database--migrasi)
-4. [Model & Eloquent ORM](#4-model--eloquent-orm)
-5. [Controller](#5-controller)
-6. [View — Inertia.js & React](#6-view--inertiajs--react)
-7. [Routing](#7-routing)
-8. [Middleware](#8-middleware)
-9. [Form Request & Validasi](#9-form-request--validasi)
-10. [Policy & Gate (Otorisasi)](#10-policy--gate-otorisasi)
-11. [Session & Autentikasi](#11-session--autentikasi)
+2. [Proses Instalasi & Setup](#2-proses-instalasi--setup)
+3. [Arsitektur MVC di Laravel](#3-arsitektur-mvc-di-laravel)
+4. [Skema Database & Migrasi](#4-skema-database--migrasi)
+5. [Model & Eloquent ORM](#5-model--eloquent-orm)
+6. [Controller](#6-controller)
+7. [View — Inertia.js & React](#7-view--inertiajs--react)
+8. [Routing](#8-routing)
+9. [Middleware](#9-middleware)
+10. [Form Request & Validasi](#10-form-request--validasi)
+11. [Policy & Gate (Otorisasi)](#11-policy--gate-otorisasi)
+12. [Session & Autentikasi](#12-session--autentikasi)
+13. [Eloquent API Resources](#13-eloquent-api-resources)
+14. [CRUD Lengkap Per Modul](#14-crud-lengkap-per-modul)
+15. [Alur Data End-to-End](#15-alur-data-end-to-end)
 12. [Eloquent API Resources](#12-eloquent-api-resources)
 13. [CRUD Lengkap Per Modul](#13-crud-lengkap-per-modul)
 14. [Alur Data End-to-End](#14-alur-data-end-to-end)
@@ -38,7 +42,237 @@ Sistem Kantin Paramadina adalah aplikasi web berbasis **SPA (Single Page Applica
 
 ---
 
-## 2. Arsitektur MVC di Laravel
+## 2. Proses Instalasi & Setup
+
+### Prasyarat
+
+| Kebutuhan | Versi Minimum |
+|-----------|---------------|
+| PHP | 8.3 |
+| Composer | 2.x |
+| Node.js | 20.x |
+| npm | 10.x |
+| Database | SQLite (default) atau MySQL/PostgreSQL |
+
+---
+
+### Langkah 1 — Clone & Masuk ke Direktori
+
+```bash
+git clone <url-repository> kantin-paramadina
+cd kantin-paramadina
+```
+
+---
+
+### Langkah 2 — Install Dependensi PHP
+
+```bash
+composer install
+```
+
+Perintah ini membaca `composer.json` dan mengunduh semua paket PHP ke folder `vendor/`. Paket utama yang diinstal:
+
+| Paket | Fungsi |
+|-------|--------|
+| `laravel/framework ^13` | Core framework |
+| `inertiajs/inertia-laravel ^3` | Jembatan Laravel ↔ React |
+| `laravel/wayfinder ^0.1` | Generate TypeScript functions dari routes |
+
+---
+
+### Langkah 3 — Konfigurasi Environment
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+`php artisan key:generate` membuat `APP_KEY` yang digunakan untuk enkripsi session, cookie, dan data sensitif lainnya. Tanpa key ini aplikasi tidak bisa berjalan.
+
+**Konfigurasi `.env` yang perlu diperhatikan:**
+
+```env
+APP_NAME=KantinParamadina
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+# Database — default SQLite (tidak perlu instalasi tambahan)
+DB_CONNECTION=sqlite
+
+# Jika ingin MySQL:
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=kantin_paramadina
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# Session disimpan di database
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+```
+
+---
+
+### Langkah 4 — Setup Database
+
+```bash
+php artisan migrate
+```
+
+Perintah ini membaca semua file di `database/migrations/` secara berurutan (berdasarkan timestamp nama file) dan membuat struktur tabel. Tabel yang akan dibuat:
+
+```
+sessions
+users
+outlets
+menu_items
+stocks
+transactions
+transaction_items
+```
+
+**Opsional — Buat akun admin awal via Tinker:**
+
+```bash
+php artisan tinker
+```
+
+```php
+// Di dalam sesi tinker
+App\Models\User::create([
+    'name'      => 'Admin',
+    'username'  => 'admin',
+    'full_name' => 'Administrator',
+    'password'  => bcrypt('password'),
+    'role'      => 'Admin',
+]);
+```
+
+Atau daftar akun Customer lewat halaman `/register`, lalu ubah role-nya menjadi Admin via tinker jika diperlukan.
+
+---
+
+### Langkah 5 — Install Dependensi JavaScript
+
+```bash
+npm install
+```
+
+Mengunduh semua paket Node ke `node_modules/`. Paket frontend utama:
+
+| Paket | Fungsi |
+|-------|--------|
+| `react ^19` | UI library |
+| `@inertiajs/react ^3` | Inertia client untuk React |
+| `tailwindcss ^4` | Utility-first CSS framework |
+| `react-hot-toast ^2` | Notifikasi toast |
+| `react-markdown ^9` | Render markdown |
+
+---
+
+### Langkah 6 — Build atau Jalankan Dev Server
+
+**Mode Development (hot reload):**
+
+```bash
+composer run dev
+```
+
+Perintah ini menjalankan 4 proses sekaligus secara paralel:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ php artisan serve     → HTTP server di http://localhost  │
+│ php artisan queue:listen → Queue worker untuk jobs       │
+│ php artisan pail      → Log viewer di terminal           │
+│ npm run dev           → Vite dev server + hot reload     │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Mode Production (build statis):**
+
+```bash
+npm run build
+php artisan serve
+```
+
+`npm run build` mengompilasi semua asset React + Tailwind ke folder `public/build/` yang akan di-serve langsung oleh Laravel.
+
+---
+
+### Langkah 7 — Storage Link (untuk Upload Gambar Menu)
+
+```bash
+php artisan storage:link
+```
+
+Membuat symbolic link dari `public/storage` ke `storage/app/public`. Ini diperlukan agar gambar menu yang diupload oleh admin bisa diakses melalui URL publik (`/storage/menu-images/...`).
+
+---
+
+### Ringkasan Perintah Cepat
+
+```bash
+# Clone dan setup sekali jalan
+git clone <url> kantin-paramadina && cd kantin-paramadina
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan storage:link
+npm install
+composer run dev
+```
+
+---
+
+### Daftar Semua Route
+
+```
+GET  /                         → redirect sesuai role
+GET  /login                    → halaman login
+POST /login                    → proses login
+GET  /register                 → halaman registrasi
+POST /register                 → proses registrasi
+POST /logout                   → logout
+
+# Admin (middleware: auth, role:Admin)
+GET    /admin                  → dashboard
+GET    /admin/outlets          → daftar outlet
+POST   /admin/outlets          → tambah outlet
+PATCH  /admin/outlets/{id}     → edit outlet
+GET    /admin/menu             → daftar menu
+POST   /admin/menu             → tambah menu
+PATCH  /admin/menu/{id}        → edit menu
+DELETE /admin/menu/{id}        → hapus menu
+PATCH  /admin/menu/{id}/stock  → update stok
+GET    /admin/stock            → halaman stok
+GET    /admin/users            → kelola akun
+POST   /admin/users            → tambah akun
+PATCH  /admin/users/{id}       → edit akun
+DELETE /admin/users/{id}       → hapus akun
+
+# Customer (middleware: auth, role:Customer,Mahasiswa)
+GET  /app                      → menu kantin
+GET  /app/orders               → riwayat pesanan
+POST /app/orders               → buat pesanan
+
+# Cashier (middleware: auth, role:Cashier,Kasir)
+GET    /cashier                        → pesanan masuk
+PATCH  /cashier/orders/{id}/status     → update status pesanan
+GET    /cashier/cash-payment           → halaman kasir tunai
+POST   /cashier/cash-payment           → simpan transaksi tunai
+
+# Dokumentasi
+GET  /docs/overview            → halaman dokumentasi ini
+```
+
+---
+
+## 3. Arsitektur MVC di Laravel
 
 Laravel menggunakan pola **Model–View–Controller (MVC)**. Dalam proyek ini perannya dibagi sebagai berikut:
 
@@ -81,7 +315,7 @@ React Page Component     ← "View" — menerima props, merender UI
 
 ---
 
-## 3. Skema Database & Migrasi
+## 4. Skema Database & Migrasi
 
 ### Tabel yang Ada
 
@@ -153,7 +387,7 @@ php artisan make:migration   # buat file migrasi baru
 
 ---
 
-## 4. Model & Eloquent ORM
+## 5. Model & Eloquent ORM
 
 Eloquent adalah ORM (Object-Relational Mapper) bawaan Laravel. Setiap model merepresentasikan satu tabel dan satu baris data adalah satu objek PHP.
 
@@ -298,7 +532,7 @@ Transaction::query()
 
 ---
 
-## 5. Controller
+## 6. Controller
 
 ### Struktur Direktori
 
@@ -418,7 +652,7 @@ Jika salah satu langkah gagal (misal stok tidak cukup), seluruh operasi di-rollb
 
 ---
 
-## 6. View — Inertia.js & React
+## 7. View — Inertia.js & React
 
 ### Konsep Inertia.js
 
@@ -488,7 +722,7 @@ Di React, `auth.user` dan `flash` tersedia di semua halaman via `usePage().props
 
 ---
 
-## 7. Routing
+## 8. Routing
 
 ### File: `routes/web.php`
 
@@ -580,7 +814,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 ---
 
-## 8. Middleware
+## 9. Middleware
 
 ### Konsep
 
@@ -685,7 +919,7 @@ Menambahkan HTTP `Link` header untuk preload aset, meningkatkan performa loading
 
 ---
 
-## 9. Form Request & Validasi
+## 10. Form Request & Validasi
 
 ### Konsep
 
@@ -769,7 +1003,7 @@ form.post('/admin/menu');
 
 ---
 
-## 10. Policy & Gate (Otorisasi)
+## 11. Policy & Gate (Otorisasi)
 
 ### Perbedaan Autentikasi vs Otorisasi
 
@@ -882,7 +1116,7 @@ public function authorize(): bool
 
 ---
 
-## 11. Session & Autentikasi
+## 12. Session & Autentikasi
 
 ### Penyimpanan Session
 
@@ -984,7 +1218,7 @@ Laravel secara otomatis melindungi semua request `POST`, `PATCH`, `PUT`, `DELETE
 
 ---
 
-## 12. Eloquent API Resources
+## 13. Eloquent API Resources
 
 **Resource** adalah layer transformasi data antara model Eloquent dan format yang dikirim ke frontend. Ini memisahkan "bentuk data di database" dari "bentuk data yang dibutuhkan React".
 
@@ -1032,7 +1266,7 @@ return Inertia::render('page', [
 
 ---
 
-## 13. CRUD Lengkap Per Modul
+## 14. CRUD Lengkap Per Modul
 
 ### 13.1 Autentikasi
 
@@ -1220,7 +1454,7 @@ if ($cashReceivedAmount < $totalAmount) {
 
 ---
 
-## 14. Alur Data End-to-End
+## 15. Alur Data End-to-End
 
 Contoh alur lengkap **Customer membuat pesanan**:
 
