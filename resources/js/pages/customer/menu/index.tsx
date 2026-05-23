@@ -9,6 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import CustomerLayout from '@/layouts/customer-layout';
+import {
+    dismissTransactionToast,
+    showFormError,
+    showTransactionLoading,
+} from '@/lib/toast';
 import { index as customerMenuIndex } from '@/routes/customer/menu';
 import { store as customerOrderStore } from '@/routes/customer/orders';
 import type {
@@ -165,7 +170,18 @@ export default function CustomerMenuIndex({
             })),
         }));
 
+        const toastId = 'customer-order-submit';
+
+        showTransactionLoading(toastId, 'Membuat pesanan...');
+
         form.post(customerOrderStore.url(), {
+            onError: (errors) => {
+                dismissTransactionToast(toastId);
+                showFormError(errors, 'Pesanan gagal dibuat.');
+            },
+            onFinish: () => {
+                dismissTransactionToast(toastId);
+            },
             onSuccess: () => {
                 setCart([]);
                 setCartModalOpen(false);

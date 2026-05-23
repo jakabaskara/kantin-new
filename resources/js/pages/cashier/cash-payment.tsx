@@ -9,6 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import CashierLayout from '@/layouts/cashier-layout';
 import {
+    dismissTransactionToast,
+    showFormError,
+    showTransactionLoading,
+} from '@/lib/toast';
+import {
     index as indexCashPayment,
     store as storeCashPayment,
 } from '@/routes/cashier/cash-payment';
@@ -140,7 +145,18 @@ export default function CashPayment({
             })),
         }));
 
+        const toastId = 'cashier-cash-payment';
+
+        showTransactionLoading(toastId, 'Menyimpan transaksi tunai...');
+
         form.post(storeCashPayment.url(), {
+            onError: (errors) => {
+                dismissTransactionToast(toastId);
+                showFormError(errors, 'Transaksi tunai gagal disimpan.');
+            },
+            onFinish: () => {
+                dismissTransactionToast(toastId);
+            },
             onSuccess: () => {
                 setCart([]);
                 form.reset();

@@ -42,6 +42,14 @@ class OrderStatusController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Status pesanan berhasil diperbarui.');
+        $message = match ($nextStatus) {
+            Transaction::ORDER_STATUS_PREPARING => 'Pesanan mulai diproses.',
+            Transaction::ORDER_STATUS_READY => 'Pesanan siap diambil.',
+            Transaction::ORDER_STATUS_COMPLETED => 'Pesanan selesai.',
+            Transaction::ORDER_STATUS_CANCELLED => 'Pesanan dibatalkan dan stok dikembalikan.',
+            default => 'Status pesanan berhasil diperbarui.',
+        };
+
+        return back()->with('success', $message);
     }
 }

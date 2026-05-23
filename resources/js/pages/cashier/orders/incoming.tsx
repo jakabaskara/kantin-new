@@ -4,6 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CashierLayout from '@/layouts/cashier-layout';
+import {
+    dismissTransactionToast,
+    showFormError,
+    showTransactionLoading,
+} from '@/lib/toast';
 import { update as updateOrderStatus } from '@/routes/cashier/orders/status';
 import type { OutletSummary, TransactionSummary } from '@/types';
 
@@ -183,15 +188,27 @@ function StatusButton({
     variant: 'default' | 'outline' | 'destructive';
 }) {
     const form = useForm({ status });
+    const toastId = `cashier-order-status-${transactionId}-${status}`;
+
+    function updateStatus() {
+        showTransactionLoading(toastId, 'Memperbarui status pesanan...');
+
+        form.patch(updateOrderStatus.url(transactionId), {
+            onError: (errors) => {
+                dismissTransactionToast(toastId);
+                showFormError(errors, 'Status pesanan gagal diperbarui.');
+            },
+            onFinish: () => {
+                dismissTransactionToast(toastId);
+            },
+            preserveScroll: true,
+        });
+    }
 
     return (
         <Button
             disabled={form.processing}
-            onClick={() =>
-                form.patch(updateOrderStatus.url(transactionId), {
-                    preserveScroll: true,
-                })
-            }
+            onClick={updateStatus}
             type="button"
             variant={variant}
         >
