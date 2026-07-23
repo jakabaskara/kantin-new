@@ -16,4 +16,12 @@ class DocsController extends Controller
             'markdown' => $markdown,
         ]);
     }
+
+    public function api(): Response
+    {
+        return Inertia::render('docs/api', [
+            'baseUrl' => rtrim((string) config('app.url'), '/').'/api',
+            'appUrl' => rtrim((string) config('app.url'), '/'),
+        ]);
+    }
 }

@@ -302,12 +302,20 @@ export default function DocsOverview({ markdown }: DocsOverviewProps) {
                             </p>
                         </div>
                     </div>
-                    <Link
-                        className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-                        href="/"
-                    >
-                        ← Kembali ke App
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        <Link
+                            className="hidden h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:inline-flex"
+                            href="/docs/api"
+                        >
+                            Dokumentasi API
+                        </Link>
+                        <Link
+                            className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                            href="/"
+                        >
+                            ← Kembali ke App
+                        </Link>
+                    </div>
                 </div>
             </header>
 

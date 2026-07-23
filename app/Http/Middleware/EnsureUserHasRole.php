@@ -18,10 +18,18 @@ class EnsureUserHasRole
         $user = $request->user();
 
         if (! $user) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
             return redirect()->route('login');
         }
 
         if (! in_array($user->role, $roles, true)) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Forbidden.'], 403);
+            }
+
             return redirect()->route('unauthorized');
         }
 

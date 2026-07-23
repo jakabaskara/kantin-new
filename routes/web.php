@@ -49,6 +49,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::inertia('/unauthorized', 'auth/unauthorized')->name('unauthorized');
 
 Route::get('/docs/overview', [DocsController::class, 'show'])->name('docs.overview');
+Route::get('/docs/api', [DocsController::class, 'api'])->name('docs.api');
 
 Route::middleware(['auth', 'role:Admin'])->prefix('admin')->group(function (): void {
     Route::get('/', DashboardController::class)->name('admin.dashboard');
